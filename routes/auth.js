@@ -1,18 +1,19 @@
 "use strict";
 
-const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const Router = require("express").Router;
-const SECRET_KEY = require("../config.js")
 const router = new Router();
-const { BadRequestError, UnauthorizedError } = require("../expressError.js")
 
+const User = require("../models/user")
+const { SECRET_KEY } = require("../config")
+const { UnauthorizedError , BadRequestError } = require("../expressError")
 /** POST /login: {username, password} => {token} */
 router.post("/login", async function (req, res, next) {
   const { username, password } = req.body;
 
-  if (User.authenticate(username, password) === true) {
+  if (await User.authenticate(username, password) === true) {
     let token = jwt.sign({ username }, SECRET_KEY);
+    User.updateLoginTimestamp(username);
     return res.json({ token });
   }
   throw new UnauthorizedError("Invalid user/password");
@@ -31,7 +32,7 @@ router.post("/register", async function (req, res, next) {
     let token = jwt.sign({ username }, SECRET_KEY);
     return res.json({ token });
   }
-  
+
   throw new BadRequestError("Invalid inputs");
 })
 
