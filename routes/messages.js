@@ -17,9 +17,9 @@ const { authenticateJWT, ensureLoggedIn ,ensureCorrectUser } = require("../middl
  * Makes sure that the currently-logged-in users is either the to or from user.
  *
  **/
-router.get('/:id', authenticateJWT, ensureLoggedIn, async function (req, res, next) {
-  const message = await Message.get(id);
-
+router.get('/:id', ensureLoggedIn, async function (req, res, next) {
+  const message = await Message.get(req.params.id);
+  
   if (message.from_user.username === res.locals.user.username ||
     message.to_user.username === res.locals.user.username) {
     return res.json({ message });
@@ -34,7 +34,7 @@ router.get('/:id', authenticateJWT, ensureLoggedIn, async function (req, res, ne
  *   {message: {id, from_username, to_username, body, sent_at}}
  *
  **/
-router.post("/", authenticateJWT, ensureLoggedIn, async function (req, res, next) {
+router.post("/", ensureLoggedIn, async function (req, res, next) {
   const fromUsername = res.locals.user.username;
   const { to_username, body } = req.body;
 
@@ -49,7 +49,7 @@ router.post("/", authenticateJWT, ensureLoggedIn, async function (req, res, next
  * Makes sure that the only the intended recipient can mark as read.
  *
  **/
-router.post("/:id/read", authenticateJWT, ensureLoggedIn, async function (rec, res, next) {
+router.post("/:id/read", ensureLoggedIn, async function (rec, res, next) {
   const reqMessage = await Message.get(id);
   if (reqMessage.to_user.username === res.locals.user.username) {
     const message = await Message.markRead(id);

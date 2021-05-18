@@ -9,7 +9,6 @@ const User = require("../models/user");
 const Message = require("../models/message")
 const { SECRET_KEY } = require("../config");
 
-const { authenticateJWT, ensureLoggedIn ,ensureCorrectUser } = require("../middleware/auth");
 
 
 describe("Users route tests", function () {
@@ -53,10 +52,12 @@ describe("Users route tests", function () {
       let response = await request(app)
       .get("/users")
       .send({ _token: token });
+
       expect(response.statusCode).toEqual(200);
       expect(response.body.users.length).toEqual(2);
-      
+      //expect response.body.users to equal ^^^users above(make request in insomnia and copy)
     });
+
     test("cant get all users if not logged in", async function () {
       let response = await request(app)
       .get("/users")
