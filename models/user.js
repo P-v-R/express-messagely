@@ -36,7 +36,7 @@ class User {
       WHERE username=$1`, [username]);
     let dbPassword = result.rows[0].password
     // console.log('query password ---->', dbPassword);
-    
+
     if (await bcrypt.compare(password, dbPassword) === true) {
       return true;
     }
@@ -131,7 +131,7 @@ class User {
 
     return messages.map(message => {
       let { id, body, sent_at, read_at, username, first_name, last_name, phone } = message;
-      let mData = {id,  body, sent_at, read_at};
+      let mData = { id, body, sent_at, read_at };
       let toUserData = { username, first_name, last_name, phone };
       mData.to_user = toUserData;
       return mData;
@@ -143,11 +143,37 @@ class User {
    *
    * [{id, from_user, body, sent_at, read_at}]
    *
-   * where from_user is
-   *   {id, first_name, last_name, phone}
+   * where from_user is // first key was id but users dont have id?
+   *   {username, first_name, last_name, phone}
    */
 
   static async messagesTo(username) {
+    const result = await db.query(
+      `SELECT m.id,
+              f.username AS username,
+              f.first_name AS first_name,
+              f.last_name AS last_name,
+              f.phone AS phone,
+              m.body,
+              m.sent_at,
+              m.read_at
+         FROM messages AS m
+                JOIN users AS f ON m.from_username = f.username
+          WHERE m.to_username = $1`,
+      [username]);
+
+    let messages = result.rows;
+
+    if (!messages) throw new NotFoundError(`No such messages from: ${username}`);
+
+    return messages.map(message => {
+      let { id, body, sent_at, read_at, username, first_name, last_name, phone } = message;
+      let mData = { id, body, sent_at, read_at };
+      let fromUserData = { username, first_name, last_name, phone };
+      mData.from_user = fromUserData;
+      return mData
+    })
+
   }
 }
 
