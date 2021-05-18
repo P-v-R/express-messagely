@@ -15,6 +15,15 @@ const router = new Router();
  * Makes sure that the currently-logged-in users is either the to or from user.
  *
  **/
+router.get('/:id', authenticateJWT, ensureLoggedIn, async function (req, res, next) {
+  const message = await Message.get(id);
+
+  if (message.from_user.username === res.locals.user.username ||
+    message.to_user.username === res.locals.user.username) {
+    return res.json({ message });
+  }
+  throw new UnauthorizedError("unauthorized action");
+});
 
 
 /** POST / - post message.
@@ -23,7 +32,13 @@ const router = new Router();
  *   {message: {id, from_username, to_username, body, sent_at}}
  *
  **/
+router.post("/", authenticateJWT, ensureLoggedIn, async function (req, res, next) {
+  const fromUsername = res.locals.user.username;
+  const { to_username, body } = req.body;
 
+  const message = await Message.create({ fromUsername, to_username, body });
+  return res.json({ message });
+})
 
 /** POST/:id/read - mark message as read:
  *
@@ -32,6 +47,13 @@ const router = new Router();
  * Makes sure that the only the intended recipient can mark as read.
  *
  **/
-
+router.post("/:id/read", authenticateJWT, ensureLoggedIn, async function(rec, res, next){
+  const reqMessage = await Message.get(id);
+  if (reqMessage.to_user.username === res.locals.user.username){
+    const message = await Message.markRead(id);
+    return res.json({ message });
+  }
+  throw new UnauthorizedError("unauthorized action");
+})
 
 module.exports = router;
