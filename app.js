@@ -27,7 +27,7 @@ const userRoutes = require("./routes/users");
 const messageRoutes = require("./routes/messages");
 
 app.use("/auth", authRoutes);
-app.use("/users", authenticateJWT, ensureLoggedIn, userRoutes);
+app.use("/users", ensureLoggedIn, userRoutes);
 app.use("/messages", messageRoutes);
 
 

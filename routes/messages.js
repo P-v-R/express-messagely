@@ -2,7 +2,9 @@
 
 const Router = require("express").Router;
 const router = new Router();
-
+const User = require("../models/user");
+const Message = require("../models/message")
+const { authenticateJWT, ensureLoggedIn ,ensureCorrectUser } = require("../middleware/auth");
 /** GET /:id - get detail of message.
  *
  * => {message: {id,
@@ -47,9 +49,9 @@ router.post("/", authenticateJWT, ensureLoggedIn, async function (req, res, next
  * Makes sure that the only the intended recipient can mark as read.
  *
  **/
-router.post("/:id/read", authenticateJWT, ensureLoggedIn, async function(rec, res, next){
+router.post("/:id/read", authenticateJWT, ensureLoggedIn, async function (rec, res, next) {
   const reqMessage = await Message.get(id);
-  if (reqMessage.to_user.username === res.locals.user.username){
+  if (reqMessage.to_user.username === res.locals.user.username) {
     const message = await Message.markRead(id);
     return res.json({ message });
   }
