@@ -1,5 +1,4 @@
 "use strict";
-
 /** Middleware for handling req authorization for routes. */
 
 const jwt = require("jsonwebtoken");
