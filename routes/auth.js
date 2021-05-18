@@ -6,18 +6,23 @@ const router = new Router();
 
 const User = require("../models/user");
 const { SECRET_KEY } = require("../config");
-const { UnauthorizedError , BadRequestError } = require("../expressError");
+const { BadRequestError } = require("../expressError");
+
+
 /** POST /login: {username, password} => {token} */
+
 router.post("/login", async function (req, res, next) {
   const { username, password } = req.body;
-
-  if (await User.authenticate(username, password) === true) {
-    let token = jwt.sign({ username }, SECRET_KEY);
-    User.updateLoginTimestamp(username);
+  const isAuthenticated = await User.authenticate(username, password);
+  if (isAuthenticated === true) {
+    const token = jwt.sign({ username }, SECRET_KEY);
+    await User.updateLoginTimestamp(username);
     return res.json({ token });
   }
-  throw new UnauthorizedError("Invalid user/password");
+  throw new BadRequestError("Invalid password");
 });
+
+
 
 /** POST /register: registers, logs in, and returns token.
  *
@@ -26,14 +31,14 @@ router.post("/login", async function (req, res, next) {
 
 router.post("/register", async function (req, res, next) {
   const { username, password, first_name, last_name, phone } = req.body;
-  const newUser = User.register({ username, password, first_name, last_name, phone })
+  const newUser = await User.register({ username, password, first_name, last_name, phone });
 
-  if (newUser) {
-    let token = jwt.sign({ username }, SECRET_KEY);
-    return res.json({ token });
+  if (!newUser) {
+    throw new BadRequestError("Invalid inputs");
   }
-  
-  throw new BadRequestError("Invalid inputs");
+  await User.updateLoginTimestamp(username);
+  const token = jwt.sign({ username }, SECRET_KEY);
+  return res.json({ token });
 });
 
 module.exports = router;

@@ -1,10 +1,9 @@
 "use strict";
 
-const { NotFoundError } = require("../expressError");
+const { NotFoundError, BadRequestError } = require("../expressError");
 const db = require("../db");
 const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
-const { SECRET_KEY, BCRYPT_WORK_FACTOR } = require("../config")
+const { BCRYPT_WORK_FACTOR } = require("../config")
 
 /** User of the site. */
 
@@ -24,7 +23,6 @@ class User {
         VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         RETURNING username, password, first_name, last_name, phone`,
       [username, hashedPassword, first_name, last_name, phone]);
-    // console.log("RESULT ==>", result.rows[0])
     return result.rows[0];
   }
 
@@ -34,21 +32,23 @@ class User {
     const result = await db.query(`
       SELECT password from users
       WHERE username=$1`, [username]);
-    let dbPassword = result.rows[0].password
-    // console.log('query password ---->', dbPassword);
+
+    let user = result.rows[0];
+    if (user === undefined) {
+      throw new BadRequestError('Username not valid.');
+    }
+
+    let dbPassword = user.password
 
     if (await bcrypt.compare(password, dbPassword) === true) {
       return true;
     }
-    else {
-      return false;
-    }
+    return false;
   }
 
   /** Update last_login_at for user */
 
   static async updateLoginTimestamp(username) {
-    console.log('updateLogin running');
     const result = await db.query(`
       UPDATE users SET last_login_at=CURRENT_TIMESTAMP
       WHERE username=$1
@@ -56,16 +56,12 @@ class User {
       [username]);
 
     let updatedUser = result.rows[0];
-    console.log('updateUser --->', updatedUser);
 
     if (updatedUser === undefined) {
-      const err = new Error(`No such user: ${username}`);
-      err.status = 404;
-      throw err;
+      throw new NotFoundError(`No such user: ${username}`);
     }
-
+    //NOTE: we don't have to return because we don't use this
     return updatedUser;
-
   }
 
   /** All: basic info on all users:
